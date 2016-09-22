@@ -33,6 +33,11 @@ function parse_config() {
             echo -e -n "$flag "
         done
     )
+    mysqldump_flags_args=$(
+        for flag in ${MYSQLDUMP_FLAGS[@]}; do
+            echo -e -n "$flag "
+        done
+    )
 }
 
 function load_last_backup_config() {
@@ -156,6 +161,21 @@ function send_mail() {
     mail -s "$subject" $MAIL_TO < "${LOG_FILE}"
 }
 
+function backup_mysql_databases() {
+    echo -e "Creating mysql dabatases directory..."
+    ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+        "mkdir --parent ${DEST_HOST_BACKUPS_DIR%/}/$backup_name/mysql_databases"
+    for database in ${MYSQL_DATABASES[@]}; do
+        echo -e "Sending backup of '$database' database to '$DEST_HOST_HOSTNAME'."
+        echo -e "-- Begin mysqldump --"
+        mysqldump $mysqldump_flags_args -u $MYSQL_USER \
+            --password=$MYSQL_PASSWORD $database | gzip -9 | \
+            ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+            "cat > ${DEST_HOST_BACKUPS_DIR%/}/$backup_name/mysql_databases/$database.gz"
+        echo -e "-- End mysqldump --"
+    done
+}
+
 ## MAIN BEGIN ##
 
 load_config
@@ -175,11 +195,18 @@ else
     if [ $rsync_exit_value -ne 0 ]; then
         rsync_error_message=$(get_rsync_error)
         echo -e "Error executing rsync: $rsync_error_message"
-        send_mail
-        exit 1
     fi
 fi
-remove_old_backups
+if [ ${#MYSQL_DATABASES[@]} -eq 0 ]; then
+    echo -e "There are no mysql databases to backup."
+else
+    backup_mysql_databases
+fi
+if [ $rsync_exit_value -eq 0 ]; then
+    remove_old_backups
+else
+    echo -e "Rsync failed! Old backups are not deleted!"
+fi
 send_mail
 
 ## MAIN END ##
