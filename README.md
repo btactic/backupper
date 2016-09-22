@@ -23,6 +23,14 @@ MAIL_TO="backupper@example.com"
 
 # Configuración para rotar los backups
 BACKUPS_TO_KEEP=30
+
+# Configuración backup bases de datos mysql
+MYSQL_USER=user
+MYSQL_PASSWORD=pass1234
+MYSQL_DATABASES=(
+    database1
+    datanase2
+)
 ```
 
 Configurar la máquina de destino para que se puedan realizar conexiones ssh desde la máquina orígen sin contraseña con:
