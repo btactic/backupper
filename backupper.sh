@@ -25,7 +25,7 @@ function parse_config() {
     echo  -e "Parsing config..."
     dirs_to_backup_args=$(
         for dir in ${DIRS_TO_BACKUP[*]}; do
-            echo -e -n "${dir%/} "
+            echo -e -n "${dir%/}/ "
         done
     )
     rsync_flags_args=$(
@@ -39,15 +39,6 @@ function parse_config() {
         done
     )
     dest_backups_dir=${DEST_HOST_BACKUPS_DIR%/}
-}
-
-function load_last_backup_config() {
-    if [ -f $LAST_BACKUP_FILE ]; then
-        local last_backup_name=$(cat $LAST_BACKUP_FILE)
-        last_backup_flag=$(echo -e "--link-dest $dest_backups_dir/$last_backup_name/files/")
-    else
-        last_backup_flag=""
-    fi
 }
 
 function save_last_backup_name() {
@@ -67,16 +58,18 @@ function create_backup_dir() {
 }
 
 function send_backup() {
-    load_last_backup_config
     echo -e "Sending backup '$backup_name' to '$DEST_HOST_HOSTNAME'."
     echo -e "-- Begin rsync --"
-    rsync $rsync_flags_args $last_backup_flag -e "ssh -p $DEST_HOST_PORT" \
-        $dirs_to_backup_args $DEST_HOST_USER@$DEST_HOST_HOSTNAME:$dest_backups_dir/$backup_name/files/
-    echo -e "-- End rsync --"
+    rsync $rsync_flags_args -e "ssh -p $DEST_HOST_PORT" $dirs_to_backup_args \
+        $DEST_HOST_USER@$DEST_HOST_HOSTNAME:$dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/
     rsync_exit_value=$?
+    echo -e "-- End rsync --"
     if [ $rsync_exit_value -eq 0 ]; then
         echo -e "Backup '$backup_name' sent successfully."
-        save_last_backup_name
+        ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+            "mkdir --parent $dest_backups_dir/$backup_name/files;\
+                cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
+                $dest_backups_dir/$backup_name/files/"
     fi
 }
 
@@ -132,7 +125,7 @@ function get_rsync_error() {
 function remove_old_backups() {
     local backups
     backups=($(ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "ls -1t $dest_backups_dir/"))
+        "ls -1t $dest_backups_dir/ --ignore='$LAST_RSYNC_BACKUP_FOLDER'"))
     if [ $? -ne 0 ]; then
         echo -e "Error retrieving list of backups from remote host!"
         echo -e "Old backups will not be deleted."
@@ -222,5 +215,6 @@ else
 fi
 send_mail
 send_log_to_dest
+save_last_backup_name
 
 ## MAIN END ##
