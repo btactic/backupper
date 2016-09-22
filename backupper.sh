@@ -173,7 +173,7 @@ function backup_mysql_databases() {
         mysqldump $mysqldump_flags_args -u $MYSQL_USER \
             --password=$MYSQL_PASSWORD $database | gzip -9 -c | \
             ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-            "cat > $dest_backups_dir/$backup_name/mysql_databases/$database.gz"
+            "cat > $dest_backups_dir/$backup_name/mysql_databases/$database.sql.gz"
         echo -e "-- End mysqldump --"
     done
 }
