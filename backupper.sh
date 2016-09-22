@@ -49,9 +49,11 @@ function save_last_backup_name() {
 }
 
 function create_backup_dir() {
+    backup_name=$(date +$BACKUP_NAME_FORMAT)
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "mkdir --parent ${DEST_HOST_BACKUPS_DIR%/}/$backup_name"
-    if [ $? -ne 0 ]; then
+    create_backup_dir_exit_value=$?
+    if [ $create_backup_dir_exit_value -ne 0 ]; then
         echo -e "Error creating backup dir '$backup_name'."
     else
         echo -e "Backup dir '$backup_name' created successfully."
@@ -60,8 +62,6 @@ function create_backup_dir() {
 
 function send_backup() {
     load_last_backup_config
-    backup_name=$(date +$BACKUP_NAME_FORMAT)
-    create_backup_dir
     echo -e "Sending backup '$backup_name' to '$DEST_HOST_HOSTNAME'."
     echo -e "-- Begin rsync --"
     rsync $rsync_flags_args $last_backup_flag -e "ssh -p $DEST_HOST_PORT" $dirs_to_backup_args $DEST_HOST_USER@$DEST_HOST_HOSTNAME:${DEST_HOST_BACKUPS_DIR%/}/$backup_name/files
@@ -163,12 +163,21 @@ parse_config
 
 exec > $LOG_FILE 2>&1
 
-send_backup
-if [ $rsync_exit_value -ne 0 ]; then
-    rsync_error_message=$(get_rsync_error)
-    echo -e "Error executing rsync: $rsync_error_message"
+create_backup_dir
+if [ $create_backup_dir_exit_value -ne 0 ]; then
     send_mail
     exit 1
+fi
+if [ ${#DIRS_TO_BACKUP[@]} -eq 0 ]; then
+    echo -e "There are no dirs to backup!"
+else
+    send_backup
+    if [ $rsync_exit_value -ne 0 ]; then
+        rsync_error_message=$(get_rsync_error)
+        echo -e "Error executing rsync: $rsync_error_message"
+        send_mail
+        exit 1
+    fi
 fi
 remove_old_backups
 send_mail
