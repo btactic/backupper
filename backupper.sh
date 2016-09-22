@@ -38,12 +38,13 @@ function parse_config() {
             echo -e -n "$flag "
         done
     )
+    dest_backups_dir=${DEST_HOST_BACKUPS_DIR%/}
 }
 
 function load_last_backup_config() {
     if [ -f $LAST_BACKUP_FILE ]; then
         local last_backup_name=$(cat $LAST_BACKUP_FILE)
-        last_backup_flag=$(echo -e "--link-dest ${DEST_HOST_BACKUPS_DIR%/}/$last_backup_name/files")
+        last_backup_flag=$(echo -e "--link-dest $dest_backups_dir/$last_backup_name/files/")
     else
         last_backup_flag=""
     fi
@@ -56,7 +57,7 @@ function save_last_backup_name() {
 function create_backup_dir() {
     backup_name=$(date +$BACKUP_NAME_FORMAT)
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "mkdir --parent ${DEST_HOST_BACKUPS_DIR%/}/$backup_name"
+        "mkdir --parent $dest_backups_dir/$backup_name"
     create_backup_dir_exit_value=$?
     if [ $create_backup_dir_exit_value -ne 0 ]; then
         echo -e "Error creating backup dir '$backup_name'."
@@ -69,7 +70,8 @@ function send_backup() {
     load_last_backup_config
     echo -e "Sending backup '$backup_name' to '$DEST_HOST_HOSTNAME'."
     echo -e "-- Begin rsync --"
-    rsync $rsync_flags_args $last_backup_flag -e "ssh -p $DEST_HOST_PORT" $dirs_to_backup_args $DEST_HOST_USER@$DEST_HOST_HOSTNAME:${DEST_HOST_BACKUPS_DIR%/}/$backup_name/files
+    rsync $rsync_flags_args $last_backup_flag -e "ssh -p $DEST_HOST_PORT" \
+        $dirs_to_backup_args $DEST_HOST_USER@$DEST_HOST_HOSTNAME:$dest_backups_dir/$backup_name/files/
     echo -e "-- End rsync --"
     rsync_exit_value=$?
     if [ $rsync_exit_value -eq 0 ]; then
@@ -130,7 +132,7 @@ function get_rsync_error() {
 function remove_old_backups() {
     local backups
     backups=($(ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "ls -1t ${DEST_HOST_BACKUPS_DIR%/}/"))
+        "ls -1t $dest_backups_dir/"))
     if [ $? -ne 0 ]; then
         echo -e "Error retrieving list of backups from remote host!"
         echo -e "Old backups will not be deleted."
@@ -143,7 +145,7 @@ function remove_old_backups() {
     fi
     local rm_args=$(
         for backup in ${backups_to_remove[@]}; do
-            echo -e -n "${DEST_HOST_BACKUPS_DIR%/}/$backup "
+            echo -e -n "$dest_backups_dir/$backup "
         done
     )
     echo -e "Removing ${#backups_to_remove[@]} old backups: ${backups_to_remove[@]}"
@@ -164,14 +166,14 @@ function send_mail() {
 function backup_mysql_databases() {
     echo -e "Creating mysql dabatases directory..."
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "mkdir --parent ${DEST_HOST_BACKUPS_DIR%/}/$backup_name/mysql_databases"
+        "mkdir --parent $dest_backups_dir/$backup_name/mysql_databases"
     for database in ${MYSQL_DATABASES[@]}; do
         echo -e "Sending backup of '$database' database to '$DEST_HOST_HOSTNAME'."
         echo -e "-- Begin mysqldump --"
         mysqldump $mysqldump_flags_args -u $MYSQL_USER \
-            --password=$MYSQL_PASSWORD $database | gzip -9 | \
+            --password=$MYSQL_PASSWORD $database | gzip -9 -c | \
             ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-            "cat > ${DEST_HOST_BACKUPS_DIR%/}/$backup_name/mysql_databases/$database.gz"
+            "cat > $dest_backups_dir/$backup_name/mysql_databases/$database.gz"
         echo -e "-- End mysqldump --"
     done
 }
@@ -179,7 +181,7 @@ function backup_mysql_databases() {
 function send_log_to_dest() {
     echo -e "Sending log to destination host..."
     cat $LOG_FILE | ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "cat > ${DEST_HOST_BACKUPS_DIR%/}/$backup_name/backupper.log"
+        "cat > $dest_backups_dir/$backup_name/backupper.log"
     if [ $? -ne 0 ]; then
         echo -e "Error sending log to destination host!"
     else
