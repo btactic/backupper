@@ -38,7 +38,7 @@ function parse_config() {
 function load_last_backup_config() {
     if [ -f $LAST_BACKUP_FILE ]; then
         local last_backup_name=$(cat $LAST_BACKUP_FILE)
-        last_backup_flag=$(echo -e "--link-dest ${DEST_HOST_BACKUPS_DIR%/}/$last_backup_name")
+        last_backup_flag=$(echo -e "--link-dest ${DEST_HOST_BACKUPS_DIR%/}/$last_backup_name/files")
     else
         last_backup_flag=""
     fi
@@ -48,12 +48,23 @@ function save_last_backup_name() {
     echo -e -n "$backup_name" > $LAST_BACKUP_FILE
 }
 
+function create_backup_dir() {
+    ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+        "mkdir --parent ${DEST_HOST_BACKUPS_DIR%/}/$backup_name"
+    if [ $? -ne 0 ]; then
+        echo -e "Error creating backup dir '$backup_name'."
+    else
+        echo -e "Backup dir '$backup_name' created successfully."
+    fi
+}
+
 function send_backup() {
     load_last_backup_config
     backup_name=$(date +$BACKUP_NAME_FORMAT)
+    create_backup_dir
     echo -e "Sending backup '$backup_name' to '$DEST_HOST_HOSTNAME'."
     echo -e "-- Begin rsync --"
-    rsync $rsync_flags_args $last_backup_flag -e "ssh -p $DEST_HOST_PORT" $dirs_to_backup_args $DEST_HOST_USER@$DEST_HOST_HOSTNAME:${DEST_HOST_BACKUPS_DIR%/}/$backup_name
+    rsync $rsync_flags_args $last_backup_flag -e "ssh -p $DEST_HOST_PORT" $dirs_to_backup_args $DEST_HOST_USER@$DEST_HOST_HOSTNAME:${DEST_HOST_BACKUPS_DIR%/}/$backup_name/files
     echo -e "-- End rsync --"
     rsync_exit_value=$?
     if [ $rsync_exit_value -eq 0 ]; then
