@@ -1,7 +1,6 @@
 #!/bin/bash
 
 global_config_file="global.conf"
-backup_config_file="backup.conf"
 
 function load_config() {
     if [ -f $global_config_file ]; then
@@ -12,11 +11,11 @@ function load_config() {
         exit 1
     fi
 
-    if [ -f $backup_config_file ]; then
+    if [ -f $BACKUP_CONFIG_FILE ]; then
         echo -e "Loading backup config..."
-        source $backup_config_file
+        source $BACKUP_CONFIG_FILE
     else
-        echo -e "Error loading backup config file '$backup_config_file'."
+        echo -e "Error loading backup config file '$BACKUP_CONFIG_FILE'."
         exit 1
     fi
 }
