@@ -176,6 +176,17 @@ function backup_mysql_databases() {
     done
 }
 
+function send_log_to_dest() {
+    echo -e "Sending log to destination host..."
+    cat $LOG_FILE | ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+        "cat > ${DEST_HOST_BACKUPS_DIR%/}/$backup_name/backupper.log"
+    if [ $? -ne 0 ]; then
+        echo -e "Error sending log to destination host!"
+    else
+        echo -e "Log sent successfully to destination host."
+    fi
+}
+
 ## MAIN BEGIN ##
 
 load_config
@@ -208,5 +219,6 @@ else
     echo -e "Rsync failed! Old backups are not deleted!"
 fi
 send_mail
+send_log_to_dest
 
 ## MAIN END ##
