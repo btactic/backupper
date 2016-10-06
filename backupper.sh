@@ -47,7 +47,7 @@ function save_last_backup_name() {
 function create_backup_dir() {
     backup_name=$(date +$BACKUP_NAME_FORMAT)
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "mkdir --parent $dest_backups_dir/$backup_name"
+        "mkdir --parents $dest_backups_dir/$backup_name"
     create_backup_dir_exit_value=$?
     if [ $create_backup_dir_exit_value -ne 0 ]; then
         echo -e "Error creating backup dir '$backup_name'."
@@ -66,7 +66,7 @@ function send_backup() {
     if [ $rsync_exit_value -eq 0 ]; then
         echo -e "Backup '$backup_name' sent successfully."
         ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-            "mkdir --parent $dest_backups_dir/$backup_name/files;\
+            "mkdir --parents $dest_backups_dir/$backup_name/files;\
                 cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
                 $dest_backups_dir/$backup_name/files/"
     fi
@@ -158,7 +158,7 @@ function send_mail() {
 function backup_mysql_databases() {
     echo -e "Creating mysql dabatases directory..."
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "mkdir --parent $dest_backups_dir/$backup_name/mysql_databases"
+        "mkdir --parents $dest_backups_dir/$backup_name/mysql_databases"
     for database in ${MYSQL_DATABASES[@]}; do
         echo -e "Sending backup of '$database' database to '$DEST_HOST_HOSTNAME'."
         echo -e "-- Begin mysqldump --"
