@@ -23,20 +23,12 @@ function load_config() {
 function parse_config() {
     echo  -e "Parsing config..."
     dirs_to_backup_args=$(
-        for dir in ${DIRS_TO_BACKUP[*]}; do
+        for dir in ${DIRS_TO_BACKUP}; do
             echo -e -n "${dir%/}/ "
         done
     )
-    rsync_flags_args=$(
-        for flag in ${RSYNC_FLAGS[*]}; do
-            echo -e -n "$flag "
-        done
-    )
-    mysqldump_flags_args=$(
-        for flag in ${MYSQLDUMP_FLAGS[@]}; do
-            echo -e -n "$flag "
-        done
-    )
+    rsync_flags_args=$RSYNC_FLAGS
+    mysqldump_flags_args=$MYSQLDUMP_FLAGS
     dest_backups_dir=${DEST_HOST_BACKUPS_DIR%/}
 }
 
