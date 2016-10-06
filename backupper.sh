@@ -191,7 +191,7 @@ else
     send_backup
     if [ $rsync_exit_value -ne 0 ]; then
         rsync_error_message=$(get_rsync_error)
-        echo -e "Error executing rsync: $rsync_error_message"
+        echo -e "Error executing rsync ($rsync_exit_value): $rsync_error_message"
     fi
 fi
 if [ ${#MYSQL_DATABASES[@]} -eq 0 ]; then
