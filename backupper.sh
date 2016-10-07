@@ -32,10 +32,6 @@ function parse_config() {
     dest_backups_dir=${DEST_HOST_BACKUPS_DIR%/}
 }
 
-function save_last_backup_name() {
-    echo -e -n "$backup_name" > $LAST_BACKUP_FILE
-}
-
 function create_backup_dir() {
     backup_name=$(date +$BACKUP_NAME_FORMAT)
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
@@ -207,6 +203,5 @@ else
 fi
 send_mail
 send_log_to_dest
-save_last_backup_name
 
 ## MAIN END ##
