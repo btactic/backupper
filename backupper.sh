@@ -122,7 +122,7 @@ function remove_old_backups() {
         echo -e "Old backups will not be deleted."
         return
     fi
-    local backups_to_remove=(${backups[@]:$BACKUPS_TO_KEEP})
+    local backups_to_remove=(${backups[@]:$NUMBER_OF_BACKUPS_TO_KEEP})
     if [ ${#backups_to_remove[@]} -eq 0 ]; then
         echo -e "There are no old backups to remove."
         return
