@@ -148,7 +148,7 @@ function backup_mysql_databases() {
     echo -e "Creating mysql dabatases directory..."
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "mkdir --parents $dest_backups_dir/$backup_name/mysql_databases"
-    for database in ${MYSQL_DATABASES[@]}; do
+    for database in $MYSQL_DATABASES; do
         echo -e "Sending backup of '$database' database to '$DEST_HOST_HOSTNAME'."
         echo -e "-- Begin mysqldump --"
         mysqldump $mysqldump_flags_args -u $MYSQL_USER \
@@ -182,7 +182,7 @@ if [ $create_backup_dir_exit_value -ne 0 ]; then
     send_mail
     exit 1
 fi
-if [ ${#DIRS_TO_BACKUP[@]} -eq 0 ]; then
+if [ -z "$DIRS_TO_BACKUP" ]; then
     echo -e "There are no dirs to backup!"
 else
     send_backup
@@ -191,7 +191,7 @@ else
         echo -e "Error executing rsync ($rsync_exit_value): $rsync_error_message"
     fi
 fi
-if [ ${#MYSQL_DATABASES[@]} -eq 0 ]; then
+if [ -z "$MYSQL_DATABASES" ]; then
     echo -e "There are no mysql databases to backup."
 else
     backup_mysql_databases
