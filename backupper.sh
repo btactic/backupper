@@ -81,6 +81,16 @@ function check_config() {
         echo -e "[ERROR] Variable 'EXECUTE_RSYNC_WITH_SUDO' is empty or unset."
         backup_error=1
     fi
+    if [ ! -z "$MYSQL_DATABASES" ]; then
+        if [ -z "${MYSQL_USER}" ]; then
+            echo -e "[ERROR] Variable 'MYSQL_USER' is empty or unset."
+            backup_error=1
+        fi
+        if [ -z "${MYSQL_PASSWORD}" ]; then
+            echo -e "[ERROR] Variable 'MYSQL_PASSWORD' is empty or unset."
+            backup_error=1
+        fi
+    fi
 }
 
 function create_backup_dir() {
