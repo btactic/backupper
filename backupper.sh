@@ -1,6 +1,6 @@
 #!/bin/bash
 
-global_config_file="global.conf"
+global_config_file="/usr/local/etc/backupper/global.conf"
 
 function load_config() {
     if [ -f $global_config_file ]; then
@@ -11,11 +11,11 @@ function load_config() {
         exit 1
     fi
 
-    if [ -f $BACKUP_CONFIG_FILE ]; then
-        echo -e "Loading backup config..."
-        source $BACKUP_CONFIG_FILE
+    if [ -f $CUSTOM_CONFIG_FILE ]; then
+        echo -e "Loading custom config..."
+        source $CUSTOM_CONFIG_FILE
     else
-        echo -e "[ERROR] Could not load backup config file '$BACKUP_CONFIG_FILE'."
+        echo -e "[ERROR] Could not load custom config file '$CUSTOM_CONFIG_FILE'."
         exit 1
     fi
 }
@@ -45,8 +45,8 @@ function check_config() {
         echo -e "[ERROR] Variable 'BACKUP_NAME_FORMAT' is empty or unset."
         backup_error=1
     fi
-    if [ -z "${BACKUP_CONFIG_FILE}" ]; then
-        echo -e "[ERROR] Variable 'BACKUP_CONFIG_FILE' is empty or unset."
+    if [ -z "${CUSTOM_CONFIG_FILE}" ]; then
+        echo -e "[ERROR] Variable 'CUSTOM_CONFIG_FILE' is empty or unset."
         backup_error=1
     fi
     if [ -z "${DEST_HOST_HOSTNAME}" ]; then

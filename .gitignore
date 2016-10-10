@@ -1,3 +1,4 @@
 backup.conf
+custom.conf
 last_backup.*
 *.log
