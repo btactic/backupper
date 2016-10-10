@@ -1,0 +1,45 @@
+# Este fichero de configuración determina cómo se debe realizar el backup.
+
+# Aquí se pueden sobreescribir configuraciones del fichero 'global.conf'
+# redefiniendo el valor que deben tener las variables.
+# Por ejemplo BACKUP_NAME_FORMAT="%Y_%m_%d__%H_%M_%S"
+
+# Directorios a contemplar.
+# Definir DIRS_TO_BACKUP="" en caso de no querer hacer backup de ficheros.
+DIRS_TO_BACKUP="\
+    /var/www/html \
+    /var/log \
+"
+
+# Configuración de la máquina de destino.
+DEST_HOST_HOSTNAME=172.16.0.101
+DEST_HOST_PORT=22
+DEST_HOST_USER=backupper
+DEST_HOST_BACKUPS_DIR=backupper/
+
+# Configuración correo electrónico notificaciones.
+# Pueden ser varios separados por coma.
+# Definir MAIL_TO="" si no se quiere enviar el log por email.
+MAIL_TO="backupper@example.com"
+
+# Configuración para rotar los backups
+NUMBER_OF_BACKUPS_TO_KEEP=30
+
+# Configuración para rotar los logs
+NUMBER_OF_LOGS_TO_KEEP=30
+
+# Configuración backup bases de datos mysql.
+# Definir MYSQL_DATABASES="" en caso de no querer realizar backups de mysql.
+MYSQL_USER=user
+MYSQL_PASSWORD=pass1234
+MYSQL_DATABASES="\
+    sugarcrm \
+    wordpres \
+"
+
+# Determina si se debe ejecutar rsync con sudo o no en destino.
+# Esto permite conservar los permisos del fichero en destino.
+# Si se activa el usuario que ejecuta el rsync en destino debe poder
+# ejecutar '$ sudo rsync'.
+# Posibles valores: {true, false}
+EXECUTE_RSYNC_WITH_SUDO=false
