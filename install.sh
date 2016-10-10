@@ -39,10 +39,10 @@ fi
 
 if [ -f $CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE ]; then
     echo -e -n "Config file '$CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE' already exists. Overwriting...\n"
-    cp -f $GLOBAL_CONFIG_FILE $CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE
+    cp -f $CUSTOM_CONFIG_SAMPLE_FILE $CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE
 else
     echo -e -n "Installing config file '$CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE'...\n"
-    cp $GLOBAL_CONFIG_FILE $CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE
+    cp $CUSTOM_CONFIG_SAMPLE_FILE $CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE
 fi
 
 echo -e -n "Installation compled!\n"
