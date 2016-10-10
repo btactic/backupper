@@ -7,7 +7,7 @@ function load_config() {
         echo -e "Loading global config..."
         source $global_config_file
     else
-        echo -e "Error loading global config file '$global_config_file'."
+        echo -e "[ERROR] Could not load global config file '$global_config_file'."
         exit 1
     fi
 
@@ -15,7 +15,7 @@ function load_config() {
         echo -e "Loading backup config..."
         source $BACKUP_CONFIG_FILE
     else
-        echo -e "Error loading backup config file '$BACKUP_CONFIG_FILE'."
+        echo -e "[ERROR] Could not load backup config file '$BACKUP_CONFIG_FILE'."
         exit 1
     fi
 }
@@ -27,18 +27,69 @@ function parse_config() {
             echo -e -n "${dir%/}/ "
         done
     )
-    rsync_flags_args=$RSYNC_FLAGS
+    if [ $EXECUTE_RSYNC_WITH_SUDO == true ]; then
+        rsync_flags_args=$(echo -e -n "$RSYNC_FLAGS $RSYNC_SUDO_FLAG")
+    else
+        rsync_flags_args=$RSYNC_FLAGS
+    fi
     mysqldump_flags_args=$MYSQLDUMP_FLAGS
     dest_backups_dir=${DEST_HOST_BACKUPS_DIR%/}
+    backup_name=$(date +$BACKUP_NAME_FORMAT)
+    dest_logs_dir=${LOG_FOLDER%/}
+    log_file=$dest_logs_dir/$backup_name.log
+}
+
+function check_config() {
+    echo  -e "Checking config..."
+    if [ -z "${BACKUP_NAME_FORMAT}" ]; then
+        echo -e "[ERROR] Variable 'BACKUP_NAME_FORMAT' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${BACKUP_CONFIG_FILE}" ]; then
+        echo -e "[ERROR] Variable 'BACKUP_CONFIG_FILE' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${DEST_HOST_HOSTNAME}" ]; then
+        echo -e "[ERROR] Variable 'DEST_HOST_HOSTNAME' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${DEST_HOST_PORT}" ]; then
+        echo -e "[ERROR] Variable 'DEST_HOST_PORT' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${DEST_HOST_USER}" ]; then
+        echo -e "[ERROR] Variable 'DEST_HOST_USER' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${DEST_HOST_BACKUPS_DIR}" ]; then
+        echo -e "[ERROR] Variable 'DEST_HOST_BACKUPS_DIR' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${NUMBER_OF_BACKUPS_TO_KEEP}" ]; then
+        echo -e "[ERROR] Variable 'NUMBER_OF_BACKUPS_TO_KEEP' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${LOG_FOLDER}" ]; then
+        echo -e "[ERROR] Variable 'LOG_FOLDER' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${NUMBER_OF_LOGS_TO_KEEP}" ]; then
+        echo -e "[ERROR] Variable 'NUMBER_OF_LOGS_TO_KEEP' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${EXECUTE_RSYNC_WITH_SUDO}" ]; then
+        echo -e "[ERROR] Variable 'EXECUTE_RSYNC_WITH_SUDO' is empty or unset."
+        backup_error=1
+    fi
 }
 
 function create_backup_dir() {
-    backup_name=$(date +$BACKUP_NAME_FORMAT)
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "mkdir --parents $dest_backups_dir/$backup_name"
     create_backup_dir_exit_value=$?
     if [ $create_backup_dir_exit_value -ne 0 ]; then
-        echo -e "Error creating backup dir '$backup_name'."
+        echo -e "[ERROR] Error creating backup dir '$backup_name'."
+        backup_error=1
     else
         echo -e "Backup dir '$backup_name' created successfully."
     fi
@@ -57,6 +108,8 @@ function send_backup() {
             "mkdir --parents $dest_backups_dir/$backup_name/files;\
                 cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
                 $dest_backups_dir/$backup_name/files/"
+    else
+        backup_error=1
     fi
 }
 
@@ -115,8 +168,9 @@ function remove_old_backups() {
     backups=($(ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "ls -1t $dest_backups_dir/ --ignore='$LAST_RSYNC_BACKUP_FOLDER'"))
     if [ $? -ne 0 ]; then
-        echo -e "Error retrieving list of backups from remote host!"
+        echo -e "[ERROR] Error retrieving list of backups from remote host!"
         echo -e "Old backups will not be deleted."
+        backup_error=1
         return
     fi
     local backups_to_remove=(${backups[@]:$NUMBER_OF_BACKUPS_TO_KEEP})
@@ -133,15 +187,55 @@ function remove_old_backups() {
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "rm -rf $rm_args"
     if [ $? -ne 0 ]; then
-        echo -e "Error removing old backups!"
+        echo -e "[ERROR] Error removing old backups!"
+        backup_error=1
     else
         echo -e "Old backups removed successfully."
     fi
 }
 
+function remove_old_logs() {
+    local logs
+    logs=($(ls -1t $dest_logs_dir/))
+    if [ $? -ne 0 ]; then
+        echo -e "[ERROR] Error retrieving list of logs!"
+        echo -e "Old logs will not be deleted."
+        backup_error=1
+        return
+    fi
+    local logs_to_remove=(${logs[@]:$NUMBER_OF_LOGS_TO_KEEP})
+    if [ ${#logs_to_remove[@]} -eq 0 ]; then
+        echo -e "There are no old logs to remove."
+        return
+    fi
+    local rm_args=$(
+        for log in ${logs_to_remove[@]}; do
+            echo -e -n "$dest_logs_dir/$log "
+        done
+    )
+    echo -e "Removing ${#logs_to_remove[@]} old logs: ${logs_to_remove[@]}"
+    rm -rf $rm_args
+    if [ $? -ne 0 ]; then
+        echo -e "[ERROR] Error removing old logs!"
+        backup_error=1
+    else
+        echo -e "Old logs removed successfully."
+    fi
+}
+
 function send_mail() {
-    local subject="Backup '$backup_name' from '$(hostname -f)'"
-    mail -s "$subject" $MAIL_TO < "${LOG_FILE}"
+    if [ -z "$MAIL_TO" ]; then
+        echo -e "There are no email addresses to send log."
+    else
+        echo -e "Sending email log to '$MAIL_TO'..."
+        if [ $backup_error -eq 0 ]; then
+            result="(Success)"
+        else
+            result="(Fail)"
+        fi
+        local subject="$result Backup '$backup_name' from '$(hostname -f)'"
+        mail -s "$subject" $MAIL_TO < "${log_file}"
+    fi
 }
 
 function backup_mysql_databases() {
@@ -161,22 +255,31 @@ function backup_mysql_databases() {
 
 function send_log_to_dest() {
     echo -e "Sending log to destination host..."
-    cat $LOG_FILE | ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-        "cat > $dest_backups_dir/$backup_name/backupper.log"
+    cat $log_file | ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+        "cat > $dest_backups_dir/$backup_name/$backup_name.log"
     if [ $? -ne 0 ]; then
-        echo -e "Error sending log to destination host!"
+        echo -e "[ERROR] Error sending log to destination host!"
+        backup_error=1
     else
         echo -e "Log sent successfully to destination host."
     fi
 }
 
+function prepare_log() {
+    if [ ! -d $dest_logs_dir ]; then
+        echo -e "Creating logs foler '$dest_logs_dir'."
+        mkdir --parents $dest_logs_dir
+    fi
+    exec > $log_file 2>&1
+}
+
 ## MAIN BEGIN ##
 
+backup_error=0
 load_config
+check_config
 parse_config
-
-exec > $LOG_FILE 2>&1
-
+prepare_log
 create_backup_dir
 if [ $create_backup_dir_exit_value -ne 0 ]; then
     send_mail
@@ -188,7 +291,7 @@ else
     send_backup
     if [ $rsync_exit_value -ne 0 ]; then
         rsync_error_message=$(get_rsync_error $rsync_exit_value)
-        echo -e "Error executing rsync ($rsync_exit_value): $rsync_error_message"
+        echo -e "[ERROR] rsync fail ($rsync_exit_value): $rsync_error_message"
     fi
 fi
 if [ -z "$MYSQL_DATABASES" ]; then
@@ -196,12 +299,14 @@ if [ -z "$MYSQL_DATABASES" ]; then
 else
     backup_mysql_databases
 fi
-if [ $rsync_exit_value -eq 0 ]; then
+if [ $backup_error -eq 0 ]; then
     remove_old_backups
+    remove_old_logs
 else
-    echo -e "Rsync failed! Old backups are not deleted!"
+    echo -e "Backup failed! Old backups and logs are not deleted!"
 fi
 send_mail
 send_log_to_dest
+exit $backup_error
 
 ## MAIN END ##
