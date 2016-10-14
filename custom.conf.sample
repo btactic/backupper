@@ -29,9 +29,19 @@ NUMBER_OF_BACKUPS_TO_KEEP=30
 NUMBER_OF_LOGS_TO_KEEP=30
 
 # Configuración backup bases de datos mysql.
-# Definir MYSQL_DATABASES="" en caso de no querer realizar backups de mysql.
+# Definir MYSQL_DATABASES="" y MYSQL_BACKUP_ALL_DATABASES=false
+# en caso de no querer realizar backups de mysql.
 MYSQL_USER=user
 MYSQL_PASSWORD=pass1234
+# Posibles valores: {true, false}
+# Si se define 'false' se contemplan las bases de datos especificadas en la
+# variable MYSQL_DATABASES.
+# Si se define 'true' se buscan todas las bases de datos de la instalación
+# de mysql descartando las especificadas en MYSQL_IGNORE_DATABASES y
+# se realiza el backup de todas. En este caso se sobrescribe la variable
+# MYSQL_DATABASES con las bases de datos a realizar backup, por lo cual
+# es indiferente el valor que se le asigne a dicha variable.
+MYSQL_BACKUP_ALL_DATABASES=true
 MYSQL_DATABASES="\
     sugarcrm \
     wordpres \

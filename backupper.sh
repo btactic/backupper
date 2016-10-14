@@ -81,7 +81,13 @@ function check_config() {
         echo -e "[ERROR] Variable 'EXECUTE_RSYNC_WITH_SUDO' is empty or unset."
         backup_error=1
     fi
-    if [ ! -z "$MYSQL_DATABASES" ]; then
+    if [ -z "${MYSQL_BACKUP_ALL_DATABASES}" ]; then
+        echo -e "[ERROR] Variable 'MYSQL_BACKUP_ALL_DATABASES' is empty or unset."
+        echo -e "Setting MYSQL_BACKUP_ALL_DATABASES=false"
+        MYSQL_BACKUP_ALL_DATABASES=false
+        backup_error=1
+    fi
+    if [ ! -z "$MYSQL_DATABASES" ] || [ $MYSQL_BACKUP_ALL_DATABASES == true ]; then
         if [ -z "${MYSQL_USER}" ]; then
             echo -e "[ERROR] Variable 'MYSQL_USER' is empty or unset."
             backup_error=1
@@ -252,7 +258,7 @@ function backup_mysql_databases() {
     echo -e "Creating mysql dabatases directory..."
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "mkdir --parents $dest_backups_dir/$backup_name/mysql_databases"
-    for database in $MYSQL_DATABASES; do
+    for database in $mysql_databases_to_backup; do
         echo -e "Sending backup of '$database' database to '$DEST_HOST_HOSTNAME'."
         echo -e "-- Begin mysqldump --"
         mysqldump $mysqldump_flags_args -u $MYSQL_USER \
@@ -283,6 +289,35 @@ function prepare_log() {
     exec > $log_file 2>&1
 }
 
+function parse_mysql_databases_config() {
+    if [ $MYSQL_BACKUP_ALL_DATABASES == true ]; then
+        local dbnames
+        dbnames=($(mysql -u $MYSQL_USER --password=$MYSQL_PASSWORD \
+                --batch --skip-column-names -e "show databases"))
+        if [ $? -eq 0 ]; then
+            for ignore in $MYSQL_IGNORE_DATABASES; do
+                for i in "${!dbnames[@]}"; do
+                    if [[ "x${dbnames[$i]}" = "x${ignore}" ]]; then
+                        unset 'dbnames[i]'
+                    fi
+                done
+            done
+            mysql_databases_to_backup=$(
+                for database in ${dbnames[@]}; do
+                    echo -e -n "$database "
+                done
+            )
+        else
+            echo -e "[ERROR] Error retrieving list of all databases!"
+            echo -e "The backup of the database will not be done."
+            mysql_databases_to_backup=""
+            backup_error=1
+        fi
+    else
+        mysql_databases_to_backup=$MYSQL_DATABASES
+    fi
+}
+
 ## MAIN BEGIN ##
 
 backup_error=0
@@ -304,7 +339,8 @@ else
         echo -e "[ERROR] rsync fail ($rsync_exit_value): $rsync_error_message"
     fi
 fi
-if [ -z "$MYSQL_DATABASES" ]; then
+parse_mysql_databases_config
+if [ -z "$mysql_databases_to_backup" ]; then
     echo -e "There are no mysql databases to backup."
 else
     backup_mysql_databases
