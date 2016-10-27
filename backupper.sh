@@ -120,13 +120,13 @@ function send_backup() {
     echo -e "-- End rsync --"
     if [ $rsync_exit_value -eq 0 ]; then
         echo -e "Backup '$backup_name' sent successfully."
-        ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
-            "mkdir --parents $dest_backups_dir/$backup_name/files;\
-                cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
-                $dest_backups_dir/$backup_name/files/"
     else
         backup_error=1
     fi
+    ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
+            "mkdir --parents $dest_backups_dir/$backup_name/files;\
+            cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
+            $dest_backups_dir/$backup_name/files/"
 }
 
 function get_rsync_error() {
