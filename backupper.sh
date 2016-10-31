@@ -112,6 +112,7 @@ function create_backup_dir() {
 }
 
 function send_backup() {
+    local beginTime=$(getTimeInSecconds)
     echo -e "Sending backup '$backup_name' to '$DEST_HOST_HOSTNAME'."
     echo -e "-- Begin rsync --"
     rsync $rsync_flags_args -e "ssh -p $DEST_HOST_PORT" $dirs_to_backup_args \
@@ -127,6 +128,7 @@ function send_backup() {
             "mkdir --parents $dest_backups_dir/$backup_name/files;\
             cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
             $dest_backups_dir/$backup_name/files/"
+    echo -e "[INFO] Rsync duration: $(getDuration $beginTime getTimeInSecconds)"
 }
 
 function get_rsync_error() {
@@ -255,6 +257,7 @@ function send_mail() {
 }
 
 function backup_mysql_databases() {
+    local beginTime=$(getTimeInSecconds)
     echo -e "Creating mysql dabatases directory..."
     ssh -p $DEST_HOST_PORT $DEST_HOST_USER@$DEST_HOST_HOSTNAME \
         "mkdir --parents $dest_backups_dir/$backup_name/mysql_databases"
@@ -267,6 +270,7 @@ function backup_mysql_databases() {
             "cat > $dest_backups_dir/$backup_name/mysql_databases/$database.sql.gz"
         echo -e "-- End mysqldump --"
     done
+    echo -e "[INFO] MySQL total time: $(getDuration $beginTime getTimeInSecconds)"
 }
 
 function send_log_to_dest() {
@@ -318,8 +322,37 @@ function parse_mysql_databases_config() {
     fi
 }
 
+function getDuration() {
+    local beginTime=$1
+    local endTime=$2
+    local elapsedSecconds=$(($endTime - $beginTime))
+    local hours=$(((elapsedSecconds / 60) / 60))
+    local minutes=$(((elapsedSecconds / 60) % 60))
+    local secconds=$((elapsedSecconds % 60))
+    if [ $hours -eq 1 ]; then
+        echo -e -n "1 hour "
+    elif [ $hours -ne 0 ]; then
+        echo -e -n "$hours hours "
+    fi
+    if [ $minutes -eq 1 ]; then
+        echo -e -n "1 minute "
+    else
+        echo -e -n "$minutes minutes "
+    fi
+    if [ $secconds -eq 1 ]; then
+        echo -e -n "1 seccond"
+    else
+        echo -e -n "$secconds secconds"
+    fi
+}
+
+function getTimeInSecconds() {
+    return $(date +%s)
+}
+
 ## MAIN BEGIN ##
 
+startTime=$(getTimeInSecconds)
 backup_error=0
 load_config
 check_config
@@ -351,6 +384,7 @@ if [ $backup_error -eq 0 ]; then
 else
     echo -e "Backup failed! Old backups and logs are not deleted!"
 fi
+echo -e "[INFO] Total backup duration: $(getDuration $startTime getTimeInSecconds)"
 send_mail
 send_log_to_dest
 exit $backup_error
