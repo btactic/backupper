@@ -6,6 +6,34 @@ BINARY_FILE="backupper.sh"
 GLOBAL_CONFIG_FILE="global.conf"
 CUSTOM_CONFIG_SAMPLE_FILE="custom.conf.sample"
 
+function check_dependences() {
+    echo -e "Checking dependences..."
+    if which sendemail > /dev/null; then
+        echo -e "[OK] sendemail is installed!"
+    else
+        echo -e "[FAIL] sendemail is not installed!"
+        while true; do
+            echo -e -n "Do you want to install sendemail [y/n]? "
+            read choise
+            if [ "$choise" == "n" ] || [ "$choise" == "N" ]; then
+                return
+            fi
+            if [ "$choise" == "y" ] || [ "$choise" == "Y" ]; then
+                install_sendemail
+                return
+            fi
+            echo -e "[ERROR] Invalid option!"
+        done
+    fi
+}
+
+function install_sendemail() {
+    apt-get update
+    apt-get install sendemail
+}
+
+## MAIN BEGIN ##
+
 echo -e -n "#################################\n"
 echo -e -n "#       bTactic BackUpper       #\n"
 echo -e -n "#################################\n\n"
@@ -45,4 +73,8 @@ else
     cp $CUSTOM_CONFIG_SAMPLE_FILE $CONFIG_DIR/$CUSTOM_CONFIG_SAMPLE_FILE
 fi
 
+check_dependences
+
 echo -e -n "Installation compled!\n"
+
+## MAIN END ##

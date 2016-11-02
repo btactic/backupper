@@ -18,9 +18,17 @@ DEST_HOST_USER=backupper
 DEST_HOST_BACKUPS_DIR=backupper/
 
 # Configuración correo electrónico notificaciones.
-# Pueden ser varios separados por coma.
-# Definir MAIL_TO="" si no se quiere enviar el log por email.
-MAIL_TO="backupper@example.com"
+# Definir EMAIL_TO="" en caso de no querer notificar por email.
+# En email to pueden ser varios separados por espacios.
+# Se envia un email independiente a cada destinatario.
+# Posibles valores de EMAIL_USE_TLS: yes, no
+EMAIL_FROM="BackUpper <backupper@example.com>"
+EMAIL_TO="admin@example.com admin2@example.com"
+EMAIL_SMTP_SERVER="smtp.example.com"
+EMAIL_SMTP_PORT="587"
+EMAIL_USE_TLS="yes"
+EMAIL_USER="backupper@example.com"
+EMAIL_PASSWORD="123456"
 
 # Configuración para rotar los backups
 NUMBER_OF_BACKUPS_TO_KEEP=30

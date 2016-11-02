@@ -39,6 +39,33 @@ function parse_config() {
     log_file=$dest_logs_dir/$backup_name.log
 }
 
+function check_email_config() {
+    if [ -z "${EMAIL_FROM}" ]; then
+        echo -e "[ERROR] Variable 'EMAIL_FROM' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${EMAIL_SMTP_SERVER}" ]; then
+        echo -e "[ERROR] Variable 'EMAIL_SMTP_SERVER' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${EMAIL_SMTP_PORT}" ]; then
+        echo -e "[ERROR] Variable 'EMAIL_SMTP_PORT' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${EMAIL_USE_TLS}" ]; then
+        echo -e "[ERROR] Variable 'EMAIL_USE_TLS' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${EMAIL_USER}" ]; then
+        echo -e "[ERROR] Variable 'EMAIL_USER' is empty or unset."
+        backup_error=1
+    fi
+    if [ -z "${EMAIL_PASSWORD}" ]; then
+        echo -e "[ERROR] Variable 'EMAIL_PASSWORD' is empty or unset."
+        backup_error=1
+    fi
+}
+
 function check_config() {
     echo  -e "Checking config..."
     if [ -z "${BACKUP_NAME_FORMAT}" ]; then
@@ -96,6 +123,9 @@ function check_config() {
             echo -e "[ERROR] Variable 'MYSQL_PASSWORD' is empty or unset."
             backup_error=1
         fi
+    fi
+    if [ ! -z "$EMAIL_TO" ]; then
+        check_email_config
     fi
 }
 
@@ -242,17 +272,23 @@ function remove_old_logs() {
 }
 
 function send_mail() {
-    if [ -z "$MAIL_TO" ]; then
+    if [ -z "$EMAIL_TO" ]; then
         echo -e "There are no email addresses to send log."
     else
-        echo -e "Sending email log to '$MAIL_TO'..."
+        echo -e "Sending logs by email..."
         if [ $backup_error -eq 0 ]; then
             result="(Success)"
         else
             result="(Fail)"
         fi
         local subject="$result Backup '$backup_name' from '$(hostname -f)'"
-        mail -s "$subject" $MAIL_TO < "${log_file}"
+        for mail_to in $EMAIL_TO; do
+            sendemail -u "${subject}" -o message-file="${log_file}" \
+                    -f "${EMAIL_FROM}" -t "${mail_to}" \
+                    -xu "${EMAIL_USER}" -xp "${EMAIL_PASSWORD}" \
+                    -s "${EMAIL_SMTP_SERVER}:${EMAIL_SMTP_PORT}" \
+                    -o tls="${EMAIL_USE_TLS}"
+        done
     fi
 }
 
