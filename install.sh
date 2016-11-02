@@ -5,21 +5,29 @@ BINARY_DIR="/usr/local/bin"
 BINARY_FILE="backupper.sh"
 GLOBAL_CONFIG_FILE="global.conf"
 CUSTOM_CONFIG_SAMPLE_FILE="custom.conf.sample"
+DEPENDENCES_PACKAGES="sendemail libnet-ssleay-perl libio-socket-ssl-perl"
+HAS_UPDATED_PACKAGES=false
 
 function check_dependences() {
     echo -e "Checking dependences..."
-    if which sendemail > /dev/null; then
-        echo -e "[OK] sendemail is installed!"
+    for dependence in $DEPENDENCES_PACKAGES; do
+        check_dependence $dependence
+    done
+}
+
+check_dependence() {
+    if dpkg -s $1 > /dev/null 2>&1; then
+        echo -e "[OK] $1 is installed!"
     else
-        echo -e "[FAIL] sendemail is not installed!"
+        echo -e "[FAIL] $1 is not installed!"
         while true; do
-            echo -e -n "Do you want to install sendemail [y/n]? "
+            echo -e -n "Do you want to install $1? [y/n] "
             read choise
             if [ "$choise" == "n" ] || [ "$choise" == "N" ]; then
                 return
             fi
             if [ "$choise" == "y" ] || [ "$choise" == "Y" ]; then
-                install_sendemail
+                install_package $1
                 return
             fi
             echo -e "[ERROR] Invalid option!"
@@ -27,9 +35,16 @@ function check_dependences() {
     fi
 }
 
-function install_sendemail() {
+function update_packages_list() {
     apt-get update
-    apt-get install sendemail
+    HAS_UPDATED_PACKAGES=true
+}
+
+function install_package() {
+    if [ $HAS_UPDATED_PACKAGES == false ]; then
+        update_packages_list
+    fi
+    apt-get install $1
 }
 
 ## MAIN BEGIN ##
