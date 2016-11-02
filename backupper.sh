@@ -128,7 +128,7 @@ function send_backup() {
             "mkdir --parents $dest_backups_dir/$backup_name/files;\
             cp -al $dest_backups_dir/$LAST_RSYNC_BACKUP_FOLDER/* \
             $dest_backups_dir/$backup_name/files/"
-    echo -e "[INFO] Rsync duration: $(getDuration $beginTime getTimeInSecconds)"
+    echo -e "[INFO] Rsync duration: $(getDuration $beginTime $(getTimeInSecconds))"
 }
 
 function get_rsync_error() {
@@ -270,7 +270,7 @@ function backup_mysql_databases() {
             "cat > $dest_backups_dir/$backup_name/mysql_databases/$database.sql.gz"
         echo -e "-- End mysqldump --"
     done
-    echo -e "[INFO] MySQL total time: $(getDuration $beginTime getTimeInSecconds)"
+    echo -e "[INFO] MySQL total time: $(getDuration $beginTime $(getTimeInSecconds))"
 }
 
 function send_log_to_dest() {
@@ -347,7 +347,7 @@ function getDuration() {
 }
 
 function getTimeInSecconds() {
-    return $(date +%s)
+    date +%s
 }
 
 ## MAIN BEGIN ##
@@ -384,7 +384,7 @@ if [ $backup_error -eq 0 ]; then
 else
     echo -e "Backup failed! Old backups and logs are not deleted!"
 fi
-echo -e "[INFO] Total backup duration: $(getDuration $startTime getTimeInSecconds)"
+echo -e "[INFO] Total backup duration: $(getDuration $startTime $(getTimeInSecconds))"
 send_mail
 send_log_to_dest
 exit $backup_error
