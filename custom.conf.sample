@@ -4,6 +4,12 @@
 # redefiniendo el valor que deben tener las variables.
 # Por ejemplo BACKUP_NAME_FORMAT="%Y_%m_%d__%H_%M_%S"
 
+# Ejemplo de como excluir directorios. Estos son relativos a $DIRS_TO_BACKUP
+# Para excluir /var/www/html/uploads haríamos
+# RSYNC_FLAGS="$RSYNC_FLAGS \
+#     --exclude 'uploads' \
+# "
+
 # Directorios a contemplar.
 # Definir DIRS_TO_BACKUP="" en caso de no querer hacer backup de ficheros.
 DIRS_TO_BACKUP="\
