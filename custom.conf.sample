@@ -7,7 +7,7 @@
 # Ejemplo de como excluir directorios. Estos son relativos a $DIRS_TO_BACKUP
 # Para excluir /var/www/html/uploads haríamos
 # RSYNC_FLAGS="$RSYNC_FLAGS \
-#     --exclude 'uploads' \
+#     --exclude=/var/www/html/uploads \
 # "
 
 # Directorios a contemplar.
