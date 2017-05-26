@@ -5,7 +5,7 @@ BINARY_DIR="/usr/local/bin"
 BINARY_FILE="backupper.sh"
 GLOBAL_CONFIG_FILE="global.conf"
 CUSTOM_CONFIG_SAMPLE_FILE="custom.conf.sample"
-DEPENDENCES_PACKAGES="sendemail libnet-ssleay-perl libio-socket-ssl-perl"
+DEPENDENCES_PACKAGES="sendemail libnet-ssleay-perl libio-socket-ssl-perl rsync"
 HAS_UPDATED_PACKAGES=false
 
 function check_dependences() {
