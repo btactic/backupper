@@ -2,6 +2,42 @@
 
 global_config_file="/usr/local/etc/backupper/global.conf"
 
+function check_arguments() {
+    while getopts ":c:h" opt; do
+        case $opt in
+            c)
+                CUSTOM_CONFIG_FILE=$OPTARG
+                echo "Setting custom config file to '$OPTARG'." >&2
+                ;;
+            h)
+                print_usage
+                exit 0
+                ;;
+            \?)
+                echo "Invalid option: -$OPTARG" >&2
+                print_usage
+                exit 1
+                ;;
+            :)
+                echo "Option -$OPTARG requires an argument." >&2
+                print_usage
+                exit 1
+                ;;
+        esac
+    done
+}
+
+function print_usage() {
+    cat << EOF
+Uso:
+ $0 [opciones]
+
+Opciones:
+ -c <custom_config.conf>    Especifica un fichero de configuración custom.
+ -h                         Muestra esta ayuda.
+EOF
+}
+
 function load_config() {
     if [ -f $global_config_file ]; then
         echo -e "Loading global config..."
@@ -10,6 +46,8 @@ function load_config() {
         echo -e "[ERROR] Could not load global config file '$global_config_file'."
         exit 1
     fi
+
+    check_arguments ${@}
 
     if [ -f $CUSTOM_CONFIG_FILE ]; then
         echo -e "Loading custom config..."
@@ -390,7 +428,7 @@ function getTimeInSecconds() {
 
 startTime=$(getTimeInSecconds)
 backup_error=0
-load_config
+load_config ${@}
 check_config
 parse_config
 prepare_log
