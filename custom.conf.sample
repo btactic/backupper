@@ -67,3 +67,10 @@ MYSQL_DATABASES="\
 # ejecutar '$ sudo rsync'.
 # Posibles valores: {true, false}
 EXECUTE_RSYNC_WITH_SUDO=false
+
+# Posibles valores: {true, false}
+# Si se especifica false únicamente se borran los backups antiguos si el
+# backup actual se ha realizado correctamente.
+# Si se especifica true se eliminan los backups antiguos independientemente
+# de que se haya realizado correctamente el backup actual o no.
+FORCE_REMOVE_OLD_BACKUPS=false

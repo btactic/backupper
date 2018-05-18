@@ -152,6 +152,11 @@ function check_config() {
         MYSQL_BACKUP_ALL_DATABASES=false
         backup_error=1
     fi
+    if [ -z "${FORCE_REMOVE_OLD_BACKUPS}" ]; then
+        echo -e "[WARNING] Variable 'FORCE_REMOVE_OLD_BACKUPS' is empty or unset."
+        echo -e "Setting FORCE_REMOVE_OLD_BACKUPS=false"
+        FORCE_REMOVE_OLD_BACKUPS=false
+    fi
     if [ ! -z "$MYSQL_DATABASES" ] || [ $MYSQL_BACKUP_ALL_DATABASES == true ]; then
         if [ -z "${MYSQL_USER}" ]; then
             echo -e "[ERROR] Variable 'MYSQL_USER' is empty or unset."
@@ -453,6 +458,11 @@ else
     backup_mysql_databases
 fi
 if [ $backup_error -eq 0 ]; then
+    remove_old_backups
+    remove_old_logs
+elif [ $FORCE_REMOVE_OLD_BACKUPS == true ]; then
+    echo -e -n "[INFO] Backup failed! Old backups and logs are deleted anyway "
+    echo -e "because FORCE_REMOVE_OLD_BACKUPS is set to true."
     remove_old_backups
     remove_old_logs
 else
