@@ -3,20 +3,20 @@
 Incremental backups with rsync and hard links.
 
 
-## Instalación
+## Installation
 
-1. Clonar el repositorio.
-2. Ejecutar `install.sh`.
+1. Clone repository
+2. Run `install.sh`.
 
 
 
-# Configuración
+# Setup
 
-1. Configurar la máquina de destino para que se puedan realizar conexiones ssh desde la máquina orígen sin contraseña:
-    - Si no exite el fichero `~/.ssh/id_rsa.pub` crearlo con `# ssh-keygen`.
+1. Setup destination machine so that ssh connections can be made from origin machine without a password:
+    - If `~/.ssh/id_rsa.pub` file was not to exist you need to create it with `# ssh-keygen`.
     - `# ssh-copy-id -i ~/.ssh/id_rsa.pub -p 22 backupper@172.16.0.101`
-    - Conectarse a la máquina de destino por ssh para verificar que se puede conectar correctamente.
+    - Verify you can connect from origin machine to destination machine by the means of ssh (without a password)
 
-2. Renombrar el fichero `/usr/local/etc/backupper/custom.conf.sample` por `/usr/local/etc/backupper/custom.conf`.
+2. Rename `/usr/local/etc/backupper/custom.conf.sample` filename to `/usr/local/etc/backupper/custom.conf`.
 
-3. Editar el fichero `/usr/local/etc/backupper/custom.conf` con la configuración especifica del backup que queremos realizar.
+3. Edit `/usr/local/etc/backupper/custom.conf` file with your specific backup configuration.
