@@ -1,4 +1,4 @@
-# BackUpper
+# backupper
 
 Incremental backups with rsync and hard links.
 
