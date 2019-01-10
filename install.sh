@@ -112,6 +112,6 @@ fi
 
 check_dependences
 
-echo -e -n "Installation compled!\n"
+echo -e -n "Installation completed!\n"
 
 ## MAIN END ##
