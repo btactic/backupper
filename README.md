@@ -10,7 +10,7 @@ Incremental backups with rsync and hard links.
 
 
 
-# Setup
+## Setup
 
 1. Setup destination machine so that ssh connections can be made from origin machine without a password:
     - If `~/.ssh/id_rsa.pub` file was not to exist you need to create it with `# ssh-keygen`.
